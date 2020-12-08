@@ -7,6 +7,7 @@ module.exports = {
     'vue-echarts',
     'resize-detector'
   ],
+  outputDir: "../dist/cms",
   configureWebpack: {
     optimization: {
       splitChunks: {

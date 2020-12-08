@@ -1,0 +1,21 @@
+{
+  "name": "@aqualaguna/iris",
+  "version": "1.0.0",
+  "description": "Iris CMS Simplified",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aqualaguna/Iris.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aqualaguna/Iris/issues"
+  },
+  "homepage": "https://github.com/aqualaguna/Iris#readme",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/@aqualaguna"
+  }
+}
