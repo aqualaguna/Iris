@@ -18,7 +18,7 @@
   },
   "hosting": {
     "target": "cms",
-    "public": "Iris-CMS/dist",
+    "public": "/dist/cms",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
