@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+   function isSignedIn() {
+      return request.auth != null;
+    }
+    function emailVerified() {
+      return request.auth.token.email_verified;
+    }
+    
+    function validUser() {
+    	return isSignedIn();
+    }
+
+    // [READ] Data that exists on the Firestore document
+    function existingData() {
+      return resource.data;
+    }
+    // [WRITE] Data that is sent to a Firestore document
+    function incomingData() {
+      return request.resource.data;
+    }
+
+    // Does the logged-in user match the requested userId?
+    function isUser(userId) {
+      return request.auth.uid == userId;
+    }
+
+
+    // Fetch a user-specific field from Firestore
+    function getUserData(userId) {
+    	let path = /databases/$(database)/documents/iris_user/$(userId);
+      return exists(path) ? get(path).data : null;
+    }
+    function getRoleData(roleId) {
+    	let path = /databases/$(database)/documents/iris_role_permission/$(roleId);
+      return exists(path) ?get(path).data : null;
+    }
+    function getRole(userId) {
+    	let user = getUserData(userId);
+    	let role_id = user == null ? null : user.role_id;
+    	return role_id == null ? null : getRoleData(role_id);
+    }
+    function can(res, action) {
+    	let role = getRole(request.auth.uid);
+      return role == null ? false : role.permission[res][action];
+    }
+    // match /{document=**} {
+    //   allow read, write: if false;
+    // }
+    match /iris_role_permission/{docId} {
+    	// simplified to reduce get request
+    	function canReadPermission() {
+      		let role = getRole(request.auth.uid);
+          return role == null ? false : role.permission['role']['read'] || role.role == docId;
+      }
+    	// only authenticated and have permission user can read.
+    	allow read: if validUser() && canReadPermission();
+      // only authenticated and have permission user can read.
+      // make super_admin immortal & unique
+      allow create: if validUser() && can('role', 'create') && docId != 'super_admin';
+      allow update: if validUser() && can('role', 'update') && docId != 'super_admin';
+      allow delete: if validUser() && can('role', 'delete') && docId != 'super_admin';
+    }
+    
+     match /iris_user/{docId} {
+    	// only authenticated and have permission user can read.
+    	allow read: if validUser() && (can('user', 'read') || isUser(docId));
+      // only authenticated and have permission user can read.
+      // make cannot delete own record & superadmin record
+      // only 1 super admin can exists.
+      allow delete: if validUser() && can('user', 'delete') && existingData().role_id != 'super_admin' && docId != request.auth.uid;
+      allow create: if validUser() && can('user', 'create') && incomingData().role_id == null;
+      // make sure cannot update role super admin
+      allow update: if validUser() && can('user', 'update') && (existingData().role_id == 'super_admin' ? incomingData().role_id == 'super_admin' : can('user', 'assign_role')) && incomingData().email == existingData().email;
+    }
+    match /iris_content_model/{docId} {
+    // only authenticated and have permission user can read.
+    	allow read: if validUser() && can('content_model', 'read');
+      // only authenticated and have permission user can write.
+      allow update: if validUser() && can('content_model', 'update');
+      allow delete: if validUser() && can('content_model', 'delete');
+      allow create: if validUser() && can('content_model', 'create');
+    }
+    
+    match /iris_global/{docId} {
+    	// only superadmin can read & write
+    	allow read: if validUser() && getUserData(request.auth.uid).role_id == 'super_admin' && docId == 'iris_settings';
+      allow write: if validUser() && getUserData(request.auth.uid).role_id == 'super_admin' && docId == 'iris_settings';
+    }
+    // #plugin-rule-start
+    
+    // #plugin-rule-end
+  }
+}
