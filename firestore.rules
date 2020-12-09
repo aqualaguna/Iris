@@ -85,7 +85,7 @@ service cloud.firestore {
     
     match /iris_global/{docId} {
     	// only superadmin can read & write
-    	allow read: if validUser() && getUserData(request.auth.uid).role_id == 'super_admin' && docId == 'iris_settings';
+    	allow read: if docId == 'iris_settings';
       allow write: if validUser() && getUserData(request.auth.uid).role_id == 'super_admin' && docId == 'iris_settings';
     }
     // #plugin-rule-start

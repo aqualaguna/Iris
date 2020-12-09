@@ -41,21 +41,21 @@ export default functions.https.onCall(async (data, context) => {
   const ruleService = admin.securityRules();
   // so you are super admin?
   // let get started
-  let regex = /(\/\/ #plugin-rule-start)(?<content>.*)(\/\/ #plugin-rule-end)/gms;
-  let ruleset = await ruleService.getFirestoreRuleset();
+  const regex = /(\/\/ #plugin-rule-start)(?<content>.*)(\/\/ #plugin-rule-end)/gms;
+  const ruleset = await ruleService.getFirestoreRuleset();
   let content = ruleset.source[0].content;
-  let res = regex.exec(content);
+  const res = regex.exec(content);
   let pluginRules =
-    res && res.groups && typeof res.groups.content == "string"
+    res && res.groups && typeof res.groups.content === "string"
       ? res.groups.content
       : null;
   if (pluginRules) {
     // there is content
-    let regexInner = new RegExp(
+    const regexInner = new RegExp(
       `(\\\/\\\/ #plugin-${data.plugin_name}-start)(?<content>.*)(\\\/\\\/ #plugin-${data.plugin_name}-end)`,
       "gms"
     );
-    let pluginMatch = regexInner.exec(pluginRules);
+    const pluginMatch = regexInner.exec(pluginRules);
     if (pluginMatch) {
       // there is match replace it
       pluginRules = pluginRules.replace(regexInner, data.content);

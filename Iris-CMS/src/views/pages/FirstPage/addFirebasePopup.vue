@@ -63,7 +63,6 @@ export default {
       reqKey: [
         "apiKey",
         "authDomain",
-        "databaseURL",
         "projectId",
         "storageBucket",
         "messagingSenderId",
