@@ -10,6 +10,9 @@ Inspired by Flamelink but better & of course  <font size="5"> **FREE!!!** </font
 
 Created WITH ♡ ♥💕❤😘
 
+# ⚠️WARNING⚠️
+THIS PACKAGE IS STILL IN DEVELOPMENT ITS NOT READY FOR PRODUCTION YET.
+
 # Dependency
 ```json
 {
