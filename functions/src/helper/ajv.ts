@@ -1,6 +1,7 @@
 import * as Ajv from "ajv";
 
 const ajv = new Ajv({
+  removeAdditional: true,
   useDefaults: true,
   coerceTypes: true,
   allErrors: true,

@@ -1,6 +1,8 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { UserRecord } from "firebase-functions/lib/providers/auth";
+import crypto = require('crypto');
+
 // The Firebase Admin SDK to access Cloud Firestore.
 // import * as admin from "firebase-admin";
 
@@ -23,12 +25,12 @@ export default functions.https.onCall(async (data, context) => {
       displayName: email.split("@")[0],
       emailVerified: true,
     });
-    await db.runTransaction((transaction) => {
-      return Promise.all([
-        transaction.set(doc, { initialized: true }),
-        initUser(transaction, user),
-        initPermission(transaction, db),
-      ]);
+    await db.runTransaction(async (transaction) => {
+      await transaction.set(doc, { initialized: true });
+      await initUser(transaction, user);
+      await initPermission(transaction, db);
+      await createSecret(transaction);
+      return true;
     });
     return {
       code: "ok",
@@ -36,6 +38,15 @@ export default functions.https.onCall(async (data, context) => {
     };
   }
 });
+
+async function createSecret(transaction: FirebaseFirestore.Transaction) {
+  const doc = admin.firestore().collection('iris_global').doc('iris_secret');
+  const key = crypto.randomBytes(32);
+  const payload = {
+    secret: key,
+  };
+  await doc.set(payload);
+}
 
 async function initUser(
   transaction: FirebaseFirestore.Transaction,

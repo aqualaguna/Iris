@@ -70,7 +70,7 @@ service cloud.firestore {
       // make cannot delete own record & superadmin record
       // only 1 super admin can exists.
       allow delete: if validUser() && can('user', 'delete') && existingData().role_id != 'super_admin' && docId != request.auth.uid;
-      allow create: if validUser() && can('user', 'create') && incomingData().role_id == null;
+      allow create: if validUser() && isUser(docId) && incomingData().role_id == null;
       // make sure cannot update role super admin
       allow update: if validUser() && can('user', 'update') && (existingData().role_id == 'super_admin' ? incomingData().role_id == 'super_admin' : can('user', 'assign_role')) && incomingData().email == existingData().email;
     }
@@ -83,10 +83,16 @@ service cloud.firestore {
       allow create: if validUser() && can('content_model', 'create');
     }
     
-    match /iris_global/{docId} {
-    	// only superadmin can read & write
-    	allow read: if docId == 'iris_settings';
-      allow write: if validUser() && getUserData(request.auth.uid).role_id == 'super_admin' && docId == 'iris_settings';
+    match /iris_global/iris_settings {
+    	// only superadmin can write
+      // anyone can read it
+    	allow read: if true;
+      allow write: if validUser() && getUserData(request.auth.uid).role_id == 'super_admin';
+    }
+    match /iris_global/iris_secret {
+    	// no one can read it only admin sdk
+    	allow read: if false;
+      allow write: if validUser() && getUserData(request.auth.uid).role_id == 'super_admin';
     }
     // #plugin-rule-start
     

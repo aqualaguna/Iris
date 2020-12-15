@@ -98,6 +98,20 @@ export default {
       err_msg: "",
     };
   },
+  mounted() {
+    // check for functions if exists
+    var checkVersion = this.app.functions().httpsCallable("version");
+    checkVersion()
+      .then((result) => {
+        // Read result of the Cloud Function.
+        this.$store.commit("setFunctionAvailable", true);
+        this.$store.commit("setFunctionVersion", result.data);
+      })
+      .catch(() => {
+        this.$store.commit("setFunctionAvailable", false);
+        console.log("functions is not available");
+      });
+  },
   methods: {
     attemptLogin() {
       this.auth

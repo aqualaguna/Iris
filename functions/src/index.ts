@@ -9,8 +9,9 @@ import version from "./version";
 import createThumbnail from "./general/createThumbnail";
 import updateFirestoreRules from "./firestore/updateFirestoreRules";
 import init from "./init";
+import setSettings from "./setSettings";
+import firestoreTrigger from "./firestoreTrigger";
 
-// exports.copyFiles = copyFiles;
 // function to see ping
 // standard hello world
 exports.ping = ping;
@@ -22,7 +23,13 @@ exports.copyFiles = copyFiles;
 exports.createThumbnail = createThumbnail;
 
 exports.updateFirestoreRules = updateFirestoreRules;
+// init function
 exports.init = init;
+// setSettings
+exports.setSettings = setSettings;
+
+// firestore trigger
+exports.firestoreTrigger = firestoreTrigger;
 
 // TEST FUNCTION
 // debug only and dev only please do not use this functions.

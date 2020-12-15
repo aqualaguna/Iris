@@ -208,6 +208,11 @@ const router = new Router({
             action: "read",
           },
         },
+        {
+          path: "/dashboard/content-model-custom/:id",
+          name: "ContentModelCustomPage",
+          component: () => import("./views/pages/ContentModelPage/Custom/Custom.vue"),
+        },
       ],
     },
     // =============================================================================

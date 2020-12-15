@@ -91,6 +91,9 @@ export default {
     listFirebaseApp() {
       return this.$store.state.firebaseAppList;
     },
+    isFunctionAvailable() {
+      return this.$store.state.isFunctionAvailable;
+    },
   },
   data() {
     return {
@@ -122,6 +125,15 @@ export default {
     removeApp(index) {
       this.$store.commit("removeFirebaseApp", index);
     },
+    async init(app) {
+      let initFunction = app.functions().httpsCallable("init");
+      await initFunction({
+        // default 
+        email: 'admin@admin.com',
+        password: '123456',
+      }).then(console.log).catch(console.log);
+      this.$router.push('/dashboard');
+    },
     openApp(app) {
       this.$store.commit("setFirebaseApp", app);
       if (app.isInitialized) {
@@ -129,77 +141,95 @@ export default {
         let apptemp = this.$app(app.projectId);
         let user = apptemp.auth().currentUser;
         if (!user) {
-          this.$router.push('/pages/login');
+          this.$router.push("/pages/login");
         } else {
-          this.$router.push('/dashboard');
+          this.$router.push("/dashboard");
         }
-        
       } else {
         // try to read previous settings first before init
         let tempapp = this.$app(app.projectId);
-        let doc = tempapp.firestore().collection('iris_global').doc('iris_settings');
-        doc.get().then((snapshot) => {
-          if (!snapshot.data().initialized) {
-            this.$router.push('/init');
-          } else {
-            this.$router.push('/dashboard');
-          }
-        }).catch((e) => {
-          // error no document or not initialized
-          console.log(e);
-          this.$router.push('/init');
-        })
+        let doc = tempapp
+          .firestore()
+          .collection("iris_global")
+          .doc("iris_settings");
+        doc
+          .get()
+          .then((snapshot) => {
+            if (!snapshot.exists || !snapshot.data().initialized) {
+              // check for init function for a call
+              if (this.isFunctionAvailable) {
+                this.init(tempapp);
+              } else this.$router.push("/init");
+            } else {
+              this.$router.push("/dashboard");
+            }
+          })
+          .catch((e) => {
+            // error no document or not initialized
+            console.log(e);
+            if (this.isFunctionAvailable) {
+              this.init(tempapp);
+            } else this.$router.push("/init");
+          });
       }
-      
-    }
+    },
   },
   mounted() {
     // get init script from host if available
-    this.$http.get(location.origin+ '/__/firebase/init.js').then((res) => {
-      let config = /(?<config>\{.*?\})/ms.exec(res.data)
-      console.log(config)
+    this.$http.get(location.origin + "/__/firebase/init.js").then((res) => {
+      let config = /(?<config>\{.*?\})/ms.exec(res.data);
+      console.log(config);
       config = JSON.parse(config.groups.config);
       // config get
       let item = this.$store.state.firebaseAppList.find(
-          (t) => t.projectId == config.projectId
-        );
-        if (item) {
-          this.$vs.notify({
-            position: "bottom-center",
-            time: 2500,
-            title: "Already Initialized!",
-            iconPack: "feather",
-            icon: "icon-alert-circle",
-            color: "warning",
-          });
-        } else {
-          this.$store.commit("addFirebaseApp", config);
-        }
-        this.$firebase.initializeApp(config, config.projectId);
-        this.$store.commit("setFirebaseApp", config);
-        // try to read previous settings first before init
-        let tempapp = this.$app(config.projectId);
-        let doc = tempapp.firestore().collection('iris_global').doc('iris_settings');
-        doc.get().then((snapshot) => {
+        (t) => t.projectId == config.projectId
+      );
+      if (item) {
+        this.$vs.notify({
+          position: "bottom-center",
+          time: 2500,
+          title: "Already Initialized!",
+          iconPack: "feather",
+          icon: "icon-alert-circle",
+          color: "warning",
+        });
+      } else {
+        this.$store.commit("addFirebaseApp", config);
+      }
+      this.$firebase.initializeApp(config, config.projectId);
+      this.$store.commit("setFirebaseApp", config);
+      // try to read previous settings first before init
+      let tempapp = this.$app(config.projectId);
+      let doc = tempapp
+        .firestore()
+        .collection("iris_global")
+        .doc("iris_settings");
+      doc
+        .get()
+        .then((snapshot) => {
           if (!snapshot.data().initialized) {
-            this.$router.push('/init');
+            if (this.isFunctionAvailable) {
+              this.init(tempapp);
+            } else this.$router.push("/init");
           } else {
-            this.$router.push('/dashboard');
+            this.$router.push("/dashboard");
           }
-        }).catch((e) => {
+        })
+        .catch((e) => {
           // error no document or not initialized
           console.log(e);
-          this.$router.push('/init');
-        })
-    })
-  }
+          if (this.isFunctionAvailable) {
+              this.init(tempapp);
+            } else this.$router.push("/init");
+        });
+    });
+  },
 };
 </script>
 
 <style lang="scss">
 .firebase-list-item:hover {
   background-color: rgba(0, 0, 0, 0.1);
-  
 }
 #page-login {
   .social-login-buttons {
