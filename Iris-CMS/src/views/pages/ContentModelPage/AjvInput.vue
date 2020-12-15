@@ -12,6 +12,8 @@
     >
   </select>
   <FlatPickrWrapper
+    :danger="danger"
+    :danger-text="dangerText"
     v-else-if="['date-time', 'date', 'time'].includes(schema.format)"
     v-model="val"
     class="w-full p-4 m-auto"
@@ -30,19 +32,32 @@
       :dir="$vs.rtl ? 'rtl' : 'ltr'"
     />
   </div>
-  <vs-input
-    :danger="danger"
-    :danger-text="dangerText"
-    class="p-4 m-auto"
-    :class="{ 'w-full': schema.type && !schema.type.includes('boolean') }"
-    @input="validate"
-    v-model="val"
-    :type="type"
-    :min="min"
-    :max="max"
-    :size="size"
-    v-else
-  />
+  <div v-else class="flex">
+    <vs-input
+      :danger="danger"
+      :danger-text="dangerText"
+      class="py-2  pl-2 m-auto"
+      :class="{ 'w-full': schema.type && !schema.type.includes('boolean') }"
+      @input="validate"
+      v-model="val"
+      :type="type"
+      :min="min"
+      :max="max"
+      :size="size"
+    />
+
+    <vs-button
+      color="danger"
+      type="flat"
+      icon-pack="feather"
+      class="mt-2"
+      icon="icon-x"
+      @click="
+        val = null;
+        validate(null);
+      "
+    ></vs-button>
+  </div>
 </template>
 
 <script>
@@ -84,8 +99,16 @@ export default {
       danger: false,
       min: null,
       max: null,
+      format: null,
       dangerText: "",
+      interval: setInterval(() => {
+        if (this.format != this.schema.format) this.$forceUpdate();
+        this.format = this.schema.format;
+      }, 100),
     };
+  },
+  destroyed() {
+    clearInterval(this.interval);
   },
   mounted() {
     if (
@@ -94,8 +117,8 @@ export default {
         this.schema.type.includes("number"))
     ) {
       this.type = "number";
-      this.val = this.value || this.schema.default || "",
-      this.min = this.schema.minimum;
+      (this.val = this.value || this.schema.default || ""),
+        (this.min = this.schema.minimum);
       this.max = this.schema.maximum;
     } else if (this.schema.type && this.schema.type.includes("boolean")) {
       this.type = "checkbox";
@@ -115,10 +138,9 @@ export default {
       if (val instanceof Date) {
         val = val.toISOString();
       }
-      var valid = validateFunc(this.val);
+      var valid = validateFunc(val);
       if (!valid) {
         this.danger = true;
-        console.log(validateFunc.errors);
         this.dangerText = validateFunc.errors[0].message;
       } else {
         this.danger = false;

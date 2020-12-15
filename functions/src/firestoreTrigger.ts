@@ -16,10 +16,14 @@ const reserved_collection = [
 ];
 
 export default functions.firestore
-  .document("/iris_{table_name}/{docId}")
+  .document("/{table_name}/{docId}")
   .onWrite(async (snapshot, context) => {
+    // ignore if not prefixed
+    if (!context.params.table_name.startsWith("iris_")) {
+      return;
+    }
     // ignore if its system
-    if (reserved_collection.includes("iris_" + context.params.table_name)) {
+    if (reserved_collection.includes(context.params.table_name)) {
       // do nothing
       return;
     }
@@ -27,7 +31,7 @@ export default functions.firestore
     const db = admin.firestore();
     const cmDoc = db
       .collection("iris_content_model")
-      .doc("iris_" + context.params.table_name);
+      .doc(context.params.table_name);
     const cmData = await cmDoc.get();
     if (!cmData.exists) {
       // do nothing

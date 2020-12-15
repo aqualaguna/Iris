@@ -197,8 +197,9 @@ export default {
   },
   name: "CreateFieldSidebar",
   watch: {
-    "field_def.schema.format"() {
-      this.properties.default.format = this.field_def.schema.format;
+    "field_def.schema.format"(val) {
+      if (this.properties && this.properties.default)
+        this.properties.default.format = val;
     },
   },
   data() {
@@ -263,13 +264,16 @@ export default {
       }
     },
     setType(type) {
+      let clone = JSON.parse(JSON.stringify(fieldProperties[type].properties));
+      this.properties = clone;
+
       this.field_def.type = type;
       this.field_def.schema = {};
-      this.field_def.schema.type = type;
-      this.properties = fieldProperties[type].properties;
+      if (this.properties.type.constant)
+        this.field_def.schema.type = this.properties.type.constant;
     },
     setApiLabel(val) {
-      this.field_def.api_label = val.replace(/\s/, "_").toLowerCase();
+      this.field_def.api_label = val.replace(/\s/g, "_").toLowerCase();
     },
     submitData() {
       this.field_def_schema.properties.schema = {
@@ -278,6 +282,17 @@ export default {
       let validateFunc = this.$ajv.compile(this.field_def_schema);
       var valid = validateFunc(this.field_def);
       if (!valid) {
+        let firstError = validateFunc.errors[0];
+        firstError.message;
+        this.$vs.notify({
+          position: "bottom-center",
+          time: 2500,
+          title: firstError.dataPath,
+          text: firstError.message,
+          iconPack: "feather",
+          icon: "icon-alert-circle",
+          color: "warning",
+        });
         console.log(validateFunc.errors);
         this.errors = validateFunc.errors;
       } else {

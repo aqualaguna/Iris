@@ -88,21 +88,21 @@ async function initSuperAdminRole(
         create: true,
         read: true,
         update: true,
-        deconste: true,
+        delete: true,
       },
       storage: {
         type: "system",
         create: true,
         read: true,
         update: true,
-        deconste: true,
+        delete: true,
       },
       role: {
         type: "system",
         create: true,
         read: true,
         update: true,
-        deconste: true,
+        delete: true,
       },
       user: {
         type: "system",
@@ -110,7 +110,7 @@ async function initSuperAdminRole(
         assign_role: true,
         read: true,
         update: true,
-        deconste: true,
+        delete: true,
       },
     },
   };
@@ -131,21 +131,21 @@ async function initAdminRole(
         create: true,
         read: true,
         update: true,
-        deconste: true,
+        delete: true,
       },
       storage: {
         type: "system",
         create: true, // create file or folder
         read: true, // read file or folder
         update: true, //  move file or folder
-        deconste: true, // deconste file or folder
+        delete: true, // delete file or folder
       },
       role: {
         type: "system",
         create: false,
         read: true,
         update: false,
-        deconste: false,
+        delete: false,
       },
       user: {
         type: "system",
@@ -153,7 +153,7 @@ async function initAdminRole(
         assign_role: false,
         read: true,
         update: false,
-        deconste: false,
+        delete: false,
       },
     },
   };

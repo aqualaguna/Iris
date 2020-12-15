@@ -2,6 +2,9 @@ export default {
   text: {
     type: "object",
     properties: {
+      type: {
+        constant: ['string', 'null'],
+      },
       minLength: {
         type: ["integer", "null"],
         minimum: 1,
@@ -22,7 +25,7 @@ export default {
       },
       default: {
         type: ["string", "null"],
-        default: "",
+        default: null,
         title: "Default Value",
         description: "Set an optional default value for the field.",
       },
@@ -51,6 +54,9 @@ export default {
   url: {
     type: "object",
     properties: {
+      type: {
+        constant: ['string', 'null'],
+      },
       minLength: {
         type: ["integer", "null"],
         minimum: 1,
@@ -65,7 +71,7 @@ export default {
       },
       default: {
         type: ["string", "null"],
-        default: "",
+        default: null,
         title: "Default Value",
         description: "Set an optional default value for the field.",
       },
@@ -86,6 +92,9 @@ export default {
   rich_text: {
     type: "object",
     properties: {
+      type: {
+        constant: ['string', 'null'],
+      },
       minLength: {
         type: ["integer", "null"],
         minimum: 1,
@@ -100,7 +109,7 @@ export default {
       },
       default: {
         type: ["string", "null"],
-        default: "",
+        default: null,
         title: "Default Value",
         description: "Set an optional default value for the field.",
       },
@@ -116,6 +125,9 @@ export default {
   html: {
     type: "object",
     properties: {
+      type: {
+        constant: ['string', 'null'],
+      },
       minLength: {
         type: ["integer", "null"],
         minimum: 1,
@@ -130,7 +142,7 @@ export default {
       },
       default: {
         type: ["string", "null"],
-        default: "",
+        default: null,
         title: "Default Value",
         description: "Set an optional default value for the field.",
       },
@@ -145,6 +157,9 @@ export default {
   },
   dropdown: {
     properties: {
+      type: {
+        constant: ['string', 'null'],
+      },
       enum: {
         minItems: 1,
         items: {
@@ -232,6 +247,9 @@ export default {
   },
   int: {
     properties: {
+      type: {
+        constant: ['integer', 'null'],
+      },
       minimum: {
         type: ["integer", "null"],
         title: "Minimum Value",
@@ -252,6 +270,9 @@ export default {
   },
   decimal: {
     properties: {
+      type: {
+        constant: ['number', 'null'],
+      },
       minimum: {
         type: ["number", "null"],
         title: "Minimum Value",
@@ -272,6 +293,9 @@ export default {
   },
   datetime: {
     properties: {
+      type: {
+        constant: ['object', 'null'],
+      },
       minimum: {
         type: ["string", "null"],
         format: "date-time",
@@ -288,6 +312,9 @@ export default {
   },
   bool: {
     properties: {
+      type: {
+        constant: ['boolean', 'null'],
+      },
       default: {
         type: ["boolean", "null"],
         default: true,

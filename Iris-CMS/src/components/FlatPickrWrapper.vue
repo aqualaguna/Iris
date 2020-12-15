@@ -16,6 +16,7 @@
         class="ml-1"
       />
     </div>
+    <span class="text-danger text-sm" v-show="danger">{{ dangerText }}</span>
   </div>
 </template>
 <script>
@@ -36,6 +37,8 @@ export default {
       default: "",
       type: String,
     },
+    danger: Boolean,
+    dangerText: String,
     config: {
       type: Object,
       default: () => ({}),
