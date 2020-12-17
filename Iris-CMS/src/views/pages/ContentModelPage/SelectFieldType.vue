@@ -26,6 +26,12 @@
           </FieldButton>
           <FieldButton @click="setType('html')" :class="{selected: value == 'html'}">
             <center class="mt-1">
+              <vs-icon icon="edit" size="25px" color="rgb(0, 0, 0)"></vs-icon>
+            </center>
+            <span class="text-center mb-1">WYSIWYG Editor</span>
+          </FieldButton>
+          <FieldButton @click="setType('html_code')" :class="{selected: value == 'html_code'}">
+            <center class="mt-1">
               <vs-icon icon="code" size="25px" color="rgb(0, 0, 0)"></vs-icon>
             </center>
             <span class="text-center mb-1">HTML</span>

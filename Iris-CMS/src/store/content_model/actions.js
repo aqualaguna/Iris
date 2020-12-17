@@ -8,6 +8,7 @@ export default {
     let currentUser = app.auth().currentUser;
     if (!currentUser) return false;
     let col = db.collection("iris_content_model");
+    commit('emptyContentModel');
     let cancelFunc = col.onSnapshot((snapshot) => {
       snapshot.docChanges().forEach((dc) => {
         switch (dc.type) {

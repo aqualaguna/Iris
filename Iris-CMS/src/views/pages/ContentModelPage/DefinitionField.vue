@@ -10,7 +10,7 @@
       <div
         class="flex my-3"
         v-for="(definition, index) in definitions"
-        :key="index"
+        :key="definition.api_label"
       >
         <feather-icon
           icon="MenuIcon"
@@ -19,7 +19,7 @@
         />
         <vx-card
           class="flex-1 pb-5"
-          :title="definition.title + ` (${definition.type})`"
+          :title="definition.title + ' (' + ($options.filters.title(definition.type)) + ')'"
           :subtitle="definition.description"
         >
           <template slot="actions">

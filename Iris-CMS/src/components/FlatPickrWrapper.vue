@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="label" class="text-md">{{ label }}</div>
+    <div v-if="label" class="text-xs text-muted">{{ label }}</div>
     <div class="flex">
       <flat-pickr
         v-model="clone_value"
@@ -10,6 +10,7 @@
         @on-change="$emit('on-change', $event)"
       />
       <feather-icon
+        tabindex="-1"
         @click="onInput(null)"
         icon="TrashIcon"
         svgClasses="h-4 w-4 text-danger"

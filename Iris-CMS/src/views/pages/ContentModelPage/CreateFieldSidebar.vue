@@ -257,7 +257,9 @@ export default {
     },
     setMode(mode, data) {
       if (mode == "update") {
-        this.properties = fieldProperties[data.type].properties;
+        this.properties = JSON.parse(
+          JSON.stringify(fieldProperties[data.type].properties)
+        );
         this.field_def = data;
       } else {
         this.reset();
@@ -283,7 +285,6 @@ export default {
       var valid = validateFunc(this.field_def);
       if (!valid) {
         let firstError = validateFunc.errors[0];
-        firstError.message;
         this.$vs.notify({
           position: "bottom-center",
           time: 2500,

@@ -40,7 +40,6 @@
         $refs.cSidebar.isSidebarActiveLocal = true;
       "
     />
-    
   </div>
 </template>
 
@@ -60,19 +59,19 @@ export default {
     IconPickerPopup,
     AvatarIcon,
     DefinitionField,
-  //   Test: (resolve, reject) => {
-  //     return resolve({
-  //       template: "<div>{{message}}</div>",
-  //       data() {
-  //         return {
-  //           message: "test man",
-  //         };
-  //       },
-  //       created() {
-  //         console.log('yo!', this.$app);
-  //       }
-  //     });
-  //   },
+    //   Test: (resolve, reject) => {
+    //     return resolve({
+    //       template: "<div>{{message}}</div>",
+    //       data() {
+    //         return {
+    //           message: "test man",
+    //         };
+    //       },
+    //       created() {
+    //         console.log('yo!', this.$app);
+    //       }
+    //     });
+    //   },
   },
   computed: {
     app() {
@@ -177,7 +176,7 @@ export default {
       EventBus.$emit("force-refresh");
     },
     createContentModelCollectionName(val) {
-      return "iris_" + val.replace(/\s/, "_").toLowerCase();
+      return "iris_" + val.replace(/\s/g, "_").toLowerCase();
     },
     async createContentModel() {
       if (this.app) {
@@ -231,17 +230,27 @@ export default {
       }
     },
     addField(def) {
+      // clean definition
+      for (const key in def.schema) {
+        if (!def.schema[key] && key != "default") delete def.schema[key];
+      }
       // check for nested
       if (this.path.length == 0) {
         // check for uniqueness
-        let item = this.definitions.find((t) => t.api_label == def.api_label);
-        if (item) {
+        let item = this.definitions.findIndex(
+          (t) => t.api_label == def.api_label
+        );
+        if (item != -1) {
           // update
-          this.$vs.notify({
-            title: "api label must unique",
-            color: "danger",
-            position: "bottom-center",
-          });
+
+          if (this.field_mode == "update") {
+            this.definitions.splice(item, 1, def);
+          } else
+            this.$vs.notify({
+              title: "api label must unique",
+              color: "danger",
+              position: "bottom-center",
+            });
         } else {
           this.definitions.push(def);
         }
@@ -343,6 +352,6 @@ export default {
       EventBus.$emit("force-refresh");
     },
   },
-}
+};
 </script>
 <style lang="scss"></style>

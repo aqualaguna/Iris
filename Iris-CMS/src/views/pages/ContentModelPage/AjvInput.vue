@@ -12,6 +12,7 @@
     >
   </select>
   <FlatPickrWrapper
+    :label="label"
     :danger="danger"
     :danger-text="dangerText"
     v-else-if="['date-time', 'date', 'time'].includes(schema.format)"
@@ -44,13 +45,15 @@
       :min="min"
       :max="max"
       :size="size"
+      :label="label"
+      :placeholder="placeholder"
     />
-
     <vs-button
+      tabindex="-1"
       color="danger"
       type="flat"
       icon-pack="feather"
-      class="mt-2"
+      :class="label ? 'mt-8' : 'mt-2'"
       icon="icon-x"
       @click="
         val = null;
@@ -72,6 +75,8 @@ export default {
     value: {
       required: true,
     },
+    label: String,
+    placeholder: String,
     schema: {
       type: Object,
       required: true,
@@ -125,7 +130,10 @@ export default {
       this.val = this.value || this.schema.default || false;
     } else if (this.schema.type && this.schema.type.includes("array")) {
       this.val = this.value || this.schema.default || [];
+    } else {
+      this.val = this.value || this.schema.default || '';
     }
+    this.validate(this.val);
   },
   methods: {
     validate(val) {

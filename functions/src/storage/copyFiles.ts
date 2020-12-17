@@ -37,8 +37,9 @@ export default functions.https.onCall(async (data, context) => {
   const copyTask: any[] = [];
   for (const file of data.files) {
     const fileobj = bucket.file(file);
-    const destination = data.destination + file.replace(data.source, "");
-    if(data.mode == 'copy')
+    const relativePath = file.replace(data.source, "");
+    const destination = data.destination + (relativePath[0] === '/' ? '' : '/') + relativePath;
+    if(data.mode === 'copy')
       copyTask.push(fileobj.copy(destination));
     else 
       copyTask.push(fileobj.move(destination));

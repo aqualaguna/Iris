@@ -4,6 +4,9 @@ export default {
   reset(state) {
     Object.assign(state, getDefaultState())
   },
+  emptyContentModel(state) {
+    state.irisContentModel = [];
+  },
   addIrisContentModel(state, val) {
     let index = state.irisContentModel.findIndex((t) => t.id == val.id);
     if (index != -1) {

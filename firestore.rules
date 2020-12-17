@@ -94,6 +94,10 @@ service cloud.firestore {
     	allow read: if false;
       allow write: if validUser() && getUserData(request.auth.uid).role_id == 'super_admin';
     }
+    match /{tableName}/{docId} {
+    	allow read: if validUser() && tableName.matches('^iris_(.*)');
+      allow write: if validUser()&& tableName.matches('^iris_(.*)');
+    }
     // #plugin-rule-start
     
     // #plugin-rule-end

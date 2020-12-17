@@ -4,6 +4,7 @@ export default {
     properties: {
       type: {
         constant: ['string', 'null'],
+        hidden: true,
       },
       minLength: {
         type: ["integer", "null"],
@@ -56,6 +57,7 @@ export default {
     properties: {
       type: {
         constant: ['string', 'null'],
+        hidden: true,
       },
       minLength: {
         type: ["integer", "null"],
@@ -94,6 +96,7 @@ export default {
     properties: {
       type: {
         constant: ['string', 'null'],
+        hidden: true,
       },
       minLength: {
         type: ["integer", "null"],
@@ -127,18 +130,7 @@ export default {
     properties: {
       type: {
         constant: ['string', 'null'],
-      },
-      minLength: {
-        type: ["integer", "null"],
-        minimum: 1,
-        title: "Minimum Length",
-        description: "Set an optional minimum character length for the field.",
-      },
-      maxLength: {
-        type: ["integer", "null"],
-        minimum: 1,
-        title: "Maximum Length",
-        description: "Set an optional maximum character length for the field.",
+        hidden: true,
       },
       default: {
         type: ["string", "null"],
@@ -155,10 +147,32 @@ export default {
       },
     },
   },
+  html_code: {
+    type: "object",
+    properties: {
+      type: {
+        constant: ['string', 'null'],
+        hidden: true,
+      },
+      default: {
+        type: ["string", "null"],
+        default: null,
+        title: "Default Value",
+        description: "Set an optional default value for the field.",
+      },
+      isNotEmpty: {
+        type: ["boolean", "null"],
+        default: false,
+        title: "Required",
+        description: "Set this field to not accept empty value.",
+      },
+    },
+  },
   dropdown: {
     properties: {
       type: {
         constant: ['string', 'null'],
+        hidden: true,
       },
       enum: {
         minItems: 1,
@@ -249,6 +263,7 @@ export default {
     properties: {
       type: {
         constant: ['integer', 'null'],
+        hidden: true,
       },
       minimum: {
         type: ["integer", "null"],
@@ -272,6 +287,7 @@ export default {
     properties: {
       type: {
         constant: ['number', 'null'],
+        hidden: true,
       },
       minimum: {
         type: ["number", "null"],
@@ -295,6 +311,7 @@ export default {
     properties: {
       type: {
         constant: ['object', 'null'],
+        hidden: true,
       },
       minimum: {
         type: ["string", "null"],
@@ -314,6 +331,7 @@ export default {
     properties: {
       type: {
         constant: ['boolean', 'null'],
+        hidden: true,
       },
       default: {
         type: ["boolean", "null"],
