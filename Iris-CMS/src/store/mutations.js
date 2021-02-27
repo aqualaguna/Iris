@@ -21,6 +21,9 @@ const mutations = {
   setIrisUser(state, val) {
     state.IrisUser = val;
   },
+  setIrisSettings(state, val) {
+    state.IrisSettings = val;
+  },
 
   setRole(state, val) {
     state.role = val;

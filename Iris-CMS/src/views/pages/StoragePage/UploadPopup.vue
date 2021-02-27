@@ -8,6 +8,7 @@
       @finish="$emit('finish')"
       listOnly
       multiple
+      :accept="type + '/*'"
     />
   </vs-popup>
 </template>
@@ -21,8 +22,9 @@ export default {
   props: {
     path: {
       type: String,
-      default: "temporary/"
+      default: "temporary/",
     },
+    type: String,
   },
   name: "UploadPopup",
   data() {
@@ -54,8 +56,7 @@ export default {
       //     );
       //   }
     },
-    addFile() {
-    },
+    addFile() {},
     focus() {},
     open() {
       this.popupActive = true;

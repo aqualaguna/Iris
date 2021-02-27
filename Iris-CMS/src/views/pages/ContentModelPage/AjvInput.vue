@@ -52,6 +52,7 @@
       tabindex="-1"
       color="danger"
       type="flat"
+      v-if="!noClear"
       icon-pack="feather"
       :class="label ? 'mt-8' : 'mt-2'"
       icon="icon-x"
@@ -74,6 +75,10 @@ export default {
   props: {
     value: {
       required: true,
+    },
+    noClear: {
+      type: Boolean,
+      default: false,
     },
     label: String,
     placeholder: String,

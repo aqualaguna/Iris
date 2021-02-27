@@ -24,5 +24,8 @@ export default {
   },
   setUpdateData(state, data) {
     state.updateData = data;
+  },
+  setUpdateDataRow(state, data) {
+    state.updateDataRow = data;
   }
 }

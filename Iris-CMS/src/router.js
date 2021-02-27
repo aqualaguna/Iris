@@ -218,6 +218,11 @@ const router = new Router({
           name: "CreateContentModelCustomPage",
           component: () => import("./views/pages/ContentModelPage/Custom/Create.vue"),
         },
+        {
+          path: "/dashboard/content-model-custom/:id/update",
+          name: "UpdateContentModelCustomPage",
+          component: () => import("./views/pages/ContentModelPage/Custom/Create.vue"),
+        },
       ],
     },
     // =============================================================================

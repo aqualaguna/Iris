@@ -59,7 +59,7 @@ export default functions.https.onCall(async (data, context) => {
   let roledata = await roledoc.get();
   if (!roledata.exists)
     throw new HttpsError("permission-denied", "role record does not exists.");
-  let role = roledata.data();
+  let role: any = roledata.data();
   let permission = role.permission.storage;
   if (data.mode === "copy" && !(permission.read && permission.create))
     throw new HttpsError(

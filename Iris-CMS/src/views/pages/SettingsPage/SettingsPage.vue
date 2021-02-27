@@ -19,6 +19,14 @@
         <vs-input class="w-full" v-model="settings.algolia.app_secret" />
       </div>
     </div>
+    <div class="vx-row mb-6">
+      <div class="vx-col sm:w-1/3 w-full">
+        <span>App Search Secret</span>
+      </div>
+      <div class="vx-col sm:w-2/3 w-full">
+        <vs-input class="w-full" v-model="settings.algolia.app_search_secret" />
+      </div>
+    </div>
     <vs-divider></vs-divider>
     <div class="flex justify-end">
       <vs-button @click="saveSettings" :disabled="isLoading">
@@ -46,6 +54,7 @@ export default {
         algolia: {
           app_id: "",
           app_secret: "",
+          app_search_secret: "",
         },
       },
     };

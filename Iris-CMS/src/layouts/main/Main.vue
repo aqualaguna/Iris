@@ -64,6 +64,7 @@
       <div class="content-wrapper">
         <div class="router-view">
           <div class="router-content">
+            {{$route.meta}}
             <transition :name="routerTransition">
               <div
                 v-if="$route.meta.breadcrumb || $route.meta.pageTitle"
@@ -86,7 +87,6 @@
                   :route="$route"
                   :isRTL="$vs.rtl"
                 />
-
               </div>
             </transition>
 
@@ -176,11 +176,11 @@ export default {
       let items = [];
 
       for (const cm of this.irisContentModel) {
-        if(cm.archived) continue;
+        if (cm.archived) continue;
         items.push({
           url: "/dashboard/content-model-custom/" + cm.id,
           name: cm.title,
-          icon: cm.icon || 'KeyIcon',
+          icon: cm.icon || "KeyIcon",
         });
       }
       additional.items = items;
@@ -217,7 +217,7 @@ export default {
 
     isNeedPermission() {
       let meta = this.$route.meta;
-      return typeof meta.resource == 'string' && typeof meta.action == 'string';
+      return typeof meta.resource == "string" && typeof meta.action == "string";
     },
     isThemeDark() {
       return this.$store.state.theme === "dark";
@@ -282,11 +282,20 @@ export default {
         }
       }, 1000);
     },
+    listenSettingsUntilCalled() {
+      setTimeout(async () => {
+        let res = await this.$store.dispatch("listenSettings", this.app);
+        if (!res) {
+          this.listenCollectionUntilCalled();
+        }
+      }, 1000);
+    },
   },
   created() {
-    if(!this.app) return this.$router.push('/');
+    if (!this.app) return this.$router.push("/");
     setTimeout(() => {
-      if(!this.app.auth().currentUser) return this.$router.push('/pages/login');
+      if (!this.app.auth().currentUser)
+        return this.$router.push("/pages/login");
     }, 1800);
     const color =
       this.navbarColor === "#fff" && this.isThemeDark
@@ -297,16 +306,20 @@ export default {
     this.listenUserUntilCalled();
     // listen to iris_collection
     this.listenCollectionUntilCalled();
+    // listen to settings
+    this.listenSettingsUntilCalled();
     // check for functions if exists
     var checkVersion = this.app.functions().httpsCallable("version");
-    checkVersion().then((result) => {
-      // Read result of the Cloud Function.
-      this.$store.commit('setFunctionAvailable', true);
-      this.$store.commit('setFunctionVersion', result.data);
-    }).catch(() => {
-      this.$store.commit('setFunctionAvailable', false);
-      console.log('functions is not available');
-    });
+    checkVersion()
+      .then((result) => {
+        // Read result of the Cloud Function.
+        this.$store.commit("setFunctionAvailable", true);
+        this.$store.commit("setFunctionVersion", result.data);
+      })
+      .catch(() => {
+        this.$store.commit("setFunctionAvailable", false);
+        console.log("functions is not available");
+      });
   },
 };
 </script>

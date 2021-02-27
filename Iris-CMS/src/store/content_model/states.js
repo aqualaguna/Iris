@@ -1,7 +1,8 @@
 export function getDefaultState () {
   return {
     irisContentModel: [],
-    updateData: null
+    updateData: null,
+    updateDataRow: null,
   }
 }
 

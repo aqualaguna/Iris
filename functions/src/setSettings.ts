@@ -14,6 +14,7 @@ const schema = {
       properties: {
         app_id: { type: "string" },
         app_secret: { type: "string" },
+        app_search_secret: { type: "string" },
       },
     },
   },
@@ -39,7 +40,6 @@ export default functions.https.onCall(async (data, context) => {
   
   if (typeof data.algolia === 'object') {
     // encrypt required data.
-    data.algolia.app_id = encrypt(data.algolia.app_id, secret);
     data.algolia.app_secret = encrypt(data.algolia.app_secret, secret);
   }
   await doc.update(data);

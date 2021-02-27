@@ -8,7 +8,7 @@ export default {
     let currentUser = app.auth().currentUser;
     if (!currentUser) return false;
     let col = db.collection("iris_content_model");
-    commit('emptyContentModel');
+    commit("emptyContentModel");
     let cancelFunc = col.onSnapshot((snapshot) => {
       snapshot.docChanges().forEach((dc) => {
         switch (dc.type) {
@@ -92,6 +92,50 @@ export default {
       };
     }
   },
+  async archiveContentModelRow({ rootState }, row) {
+    const { model, id } = row;
+    let app = firebase.app(rootState.selectedApp.projectId);
+    if (!app) return false;
+    let db = app.firestore();
+    let currentUser = app.auth().currentUser;
+    if (!currentUser) return false;
+    let col = db.collection(model);
+    let doc = col.doc(id);
+    let data = await doc.get();
+    if (data.exists) {
+      // archived it
+      let archived = !data.data().archived;
+      return doc
+        .update({
+          archived,
+        })
+        .then(() => {
+          if (archived)
+            return {
+              position: "bottom-center",
+              color: "success",
+              title: `Row Archived!`,
+              text:
+                "this Row will not appear on search (Algolia). but the data still exists.",
+            };
+          else
+            return {
+              position: "bottom-center",
+              color: "success",
+              title: "Collection Un-Archived!",
+              text: "this collection will appear on search again.",
+            };
+        });
+    } else {
+      return {
+        position: "bottom-center",
+        color: "danger",
+        text:
+          "Please refresh your browser or clear your cache. this is unexpected error.",
+        title: "Document does not exists!",
+      };
+    }
+  },
   async deleteContentModel({ rootState }, tr) {
     let app = firebase.app(rootState.selectedApp.projectId);
     if (!app) return false;
@@ -111,20 +155,49 @@ export default {
       }
       // delete collection info
       batch.delete(doc);
-      return batch
-        .commit()
+      return batch.commit().then(() => {
+        return {
+          position: "bottom-center",
+          color: "success",
+          text: "Collection & its data is deleted.",
+          title: "Collection Deleted!",
+        };
+      });
+    }
+    return false;
+  },
+  async deleteContentModelRow({ rootState }, row) {
+    const { id, model } = row;
+    let app = firebase.app(rootState.selectedApp.projectId);
+    if (!app) return false;
+    let db = app.firestore();
+    let currentUser = app.auth().currentUser;
+    if (!currentUser) return false;
+    let col = db.collection(model);
+    let doc = col.doc(id);
+    let data = await doc.get();
+
+    if (data.exists) {
+      return db
+        .runTransaction(async (transaction) => {
+          await transaction.delete(doc);
+          let cmdoc = db.collection("iris_content_model").doc(model);
+          await transaction.update(cmdoc, {
+            row_count: firebase.firestore.FieldValue.increment(-1),
+          });
+          return true;
+        })
         .then(() => {
           return {
             position: "bottom-center",
             color: "success",
-            text: "Collection & its data is deleted.",
-            title: "Collection Deleted!",
+            title: "Row Deleted!",
           };
         });
     }
     return false;
   },
-  async createContentModel({rootState}, payload) {
+  async createContentModel({ rootState }, payload) {
     let app = firebase.app(rootState.selectedApp.projectId);
     if (!app) return false;
     let db = app.firestore();
@@ -144,17 +217,17 @@ export default {
       };
     } else {
       return doc.set(payload).then(() => {
-        return ({
+        return {
           title: "Content Model Saved!",
           color: "success",
           iconPack: "feather",
           icon: "icon-check",
           position: "bottom-center",
-        });
+        };
       });
     }
   },
-  async updateContentModel({rootState}, payload) {
+  async updateContentModel({ rootState }, payload) {
     let app = firebase.app(rootState.selectedApp.projectId);
     if (!app) return false;
     let db = app.firestore();
@@ -174,13 +247,13 @@ export default {
       };
     } else {
       return doc.update(payload).then(() => {
-        return ({
+        return {
           title: "Content Model Saved!",
           color: "success",
           iconPack: "feather",
           icon: "icon-check",
           position: "bottom-center",
-        });
+        };
       });
     }
   },

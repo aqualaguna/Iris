@@ -213,7 +213,7 @@ export default {
     },
     accept: {
       type: String,
-      default: "image/*",
+      default: "*/*",
     },
     storingPath: {
       default: "temporary",

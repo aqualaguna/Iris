@@ -10,7 +10,7 @@ import createThumbnail from "./general/createThumbnail";
 import updateFirestoreRules from "./firestore/updateFirestoreRules";
 import init from "./init";
 import setSettings from "./setSettings";
-import firestoreTrigger from "./firestoreTrigger";
+import firestoreTrigger from "./firestore/firestoreTrigger";
 
 // function to see ping
 // standard hello world

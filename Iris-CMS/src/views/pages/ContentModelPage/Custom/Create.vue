@@ -14,11 +14,12 @@
     <br />
     <div class="flex flex-wrap">
       <div
-        v-for="definition in definitions"
+        v-for="(definition, index) in definitions"
         :key="definition.api_label"
         class="w-full"
       >
         <AjvInput
+          ref="input"
           v-if="definition.type == 'text'"
           :schema="definition.schema"
           v-model="customModelData[definition.api_label]"
@@ -26,6 +27,7 @@
           :placeholder="definition.description"
         />
         <RichTextInput
+          ref="input"
           v-else-if="definition.type == 'rich_text'"
           :schema="definition.schema"
           v-model="customModelData[definition.api_label]"
@@ -33,13 +35,51 @@
           :placeholder="definition.description"
         />
         <WYSIWYG
+          ref="input"
           v-else-if="definition.type == 'html'"
+          :index="index"
           :schema="definition.schema"
           v-model="customModelData[definition.api_label]"
           :label="definition.title"
           :placeholder="definition.description"
+          @file-pick="filePick"
         ></WYSIWYG>
-
+        <CodeEditor
+          ref="input"
+          v-else-if="definition.type == 'html_code'"
+          :index="index"
+          :schema="definition.schema"
+          v-model="customModelData[definition.api_label]"
+          :label="definition.title"
+          :placeholder="definition.description"
+        ></CodeEditor>
+        <DropDown
+          ref="input"
+          v-else-if="definition.type == 'dropdown'"
+          :index="index"
+          :schema="definition.schema"
+          v-model="customModelData[definition.api_label]"
+          :label="definition.title"
+          :placeholder="definition.description"
+        ></DropDown>
+        <Ref
+          ref="input"
+          v-else-if="definition.type == 'ref'"
+          :index="index"
+          :schema="definition.schema"
+          v-model="customModelData[definition.api_label]"
+          :label="definition.title"
+          :placeholder="definition.description"
+        ></Ref>
+        <AjvInput
+          ref="input"
+          v-else-if="definition.type == 'int'"
+          :schema="definition.schema"
+          noClear
+          v-model="customModelData[definition.api_label]"
+          :label="definition.title"
+          :placeholder="definition.description"
+        />
         <!-- <vs-input
           v-if="definition.type == 'text'"
           label="Name"
@@ -48,6 +88,7 @@
         /> -->
       </div>
     </div>
+    <FilePicker ref="fpPopup" v-if="fpFlag" @close="fpFlag = false" />
   </div>
 </template>
 
@@ -55,34 +96,91 @@
 import AjvInput from "../AjvInput";
 import handleFirestoreReject from "@/helper/handleFirestoreReject";
 import RichTextInput from "./RichTextInput";
-import WYSIWYG from './WYSIWYG';
-
+import WYSIWYG from "./WYSIWYG";
+import FilePicker from "./FilePicker";
+import CodeEditor from "./CodeEditor";
+import DropDown from "./DropDown";
+import Ref from "./Ref";
 
 export default {
   name: "CreateSharedContent",
   components: {
     AjvInput,
     RichTextInput,
-    WYSIWYG
+    WYSIWYG,
+    FilePicker,
+    CodeEditor,
+    DropDown,
+    Ref,
   },
   data() {
     return {
+      mode: "create",
+      fpFlag: false,
       isLoading: false,
       customModelData: {},
     };
   },
+  mounted() {
+    if (this.$route.name == "UpdateContentModelCustomPage") {
+      // get update data
+      this.mode = "update";
+      this.customModelData = JSON.parse(
+        JSON.stringify(this.$store.state.content_model.updateDataRow)
+      );
+    }
+  },
   methods: {
+    filePick(evt) {
+      this.fpFlag = true;
+      this.$nextTick(() => {
+        this.$refs.fpPopup.open(evt);
+      });
+    },
     reset() {
       this.customModelData = {};
+      this.$forceUpdate();
+      for (const inp of this.$refs.input) {
+        if (typeof inp.reset == "function") inp.reset();
+      }
+    },
+    definitionDive(definitions) {
+      const schema = { properties: {} };
+      for (const definition of definitions) {
+        // exception
+        if (Array.isArray(definition.schema.enum)) {
+          definition.schema.enum = [
+            ...definition.schema.enum.map((t) => t.value),
+            null,
+          ];
+        }
+
+        if (definition.type == "ref") {
+          // if ref type
+          // change the definition
+          schema.properties[definition.api_label] = {
+            type: ["object", ...(definition.schema.required ? [] : ["null"])],
+            required: ["id", ...definition.schema.fieldFromRef],
+            default: null,
+          };
+          if (definition.schema.required) {
+            if (Array.isArray(schema.required))
+              schema.required.push(definition.api_label);
+            else {
+              schema.required = [definition.api_label];
+            }
+          }
+        } else schema.properties[definition.api_label] = definition.schema;
+      }
+      return schema;
     },
     save() {
       // check for validation
-      const schema = { properties: {} };
-      for (const definition of this.irisContentModel.definitions) {
-        schema.properties[definition.api_label] = definition.schema;
-      }
-      let validateFunc = this.$ajv.compile(schema);
+
+      let clone = JSON.parse(JSON.stringify(this.irisContentModel.definitions));
+      const schema = this.definitionDive(clone);
       console.log(this.customModelData, schema);
+      let validateFunc = this.$ajv.compile(schema);
       var valid = validateFunc(this.customModelData);
       if (!valid) {
         let firstError = validateFunc.errors[0];

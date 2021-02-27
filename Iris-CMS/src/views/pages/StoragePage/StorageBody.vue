@@ -83,7 +83,11 @@ export default {
     ItemList,
     ItemGrid,
   },
-  props: ["filesFiltered", "mode"],
+  props: {
+    filesFiltered: Array,
+    mode: String,
+    local: Boolean,
+  },
   data() {
     return {
       mouseDownEvent: null,
@@ -139,14 +143,18 @@ export default {
     },
     dive(file) {
       if (file.type == "folder") {
-        EventBus.$emit("folder-dive", file);
+        if (this.local) {
+          this.$emit("folder-dive", file);
+        } else {
+          EventBus.$emit("folder-dive", file);
+        }
       }
     },
     selectIndex(index) {
       let clone = JSON.parse(JSON.stringify(this.files));
-      this.files = clone.map((t, i) => {
-        t.selected = i == index;
-        if (i == index) {
+      this.files = clone.map((t) => {
+        t.selected = t.fullPath == this.filesFiltered[index].fullPath;
+        if (t.fullPath == this.filesFiltered[index].fullPath) {
           this.$emit("select-file", t);
         }
         return t;

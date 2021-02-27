@@ -1,5 +1,5 @@
 <template>
-  <vs-popup title="Error List" :active.sync="popupActive">
+  <vs-popup title="File Picker" :active.sync="popupActive" fullscreen>
     <div
       class="no-scroll-content border border-solid d-theme-border-grey-light border-r-0 border-t-0 border-b-0"
     >
@@ -25,23 +25,29 @@
 
         <!-- EMAIL ACTION BAR -->
         <StorageNavigation
+          local
           @mode="mode = $event"
           @add-file="$refs.uPopup.open()"
           @select-all="selectAllCheckBox = $event"
           :selectAllCheckBox="selectAllCheckBox"
+          @folder-dive="folderDive($event.fullPath)"
         />
         <StorageProgress />
 
         <div class="flex flex-1 not-selectable">
           <StorageBody
             :mode="mode"
+            local
             :filesFiltered="filesFiltered"
-            @contextmenu="openContextMenu"
             @select-file="selectedFile = $event"
+            @folder-dive="folderDive($event.fullPath)"
           />
         </div>
       </div>
     </div>
+    <vs-button class="float-right" @click="select">
+      Select
+    </vs-button>
     <UploadPopup ref="uPopup" :path="currentFolderPath" />
   </vs-popup>
 </template>
@@ -51,9 +57,10 @@ import UploadPopup from "../../StoragePage/UploadPopup";
 import StorageBody from "../../StoragePage/StorageBody";
 import StorageProgress from "../../StoragePage/StorageProgress";
 import StorageNavigation from "../../StoragePage/StorageNavigation";
+import getAllSelectedFiles from "@/helper/getAllSelectedFiles";
 
 export default {
-  name: "ImagePickerPopup",
+  name: "FilePickerPopup",
   components: {
     UploadPopup,
     StorageBody,
@@ -65,6 +72,8 @@ export default {
       popupActive: false,
       searchQuery: "",
       selectedFile: null,
+      type: "",
+      opt: null,
     };
   },
   watch: {
@@ -89,12 +98,21 @@ export default {
       },
     },
     filesFiltered() {
+      let result;
       try {
         new RegExp(this.searchQuery);
-        return this.files.filter((t) => t.filename.match(this.searchQuery));
+        result = this.files.filter((t) => t.filename.match(this.searchQuery));
       } catch (e) {
-        return this.files;
+        result = this.files;
       }
+      // filter by type
+      result = result.filter((t) =>
+        t.type == "file"
+          ? /^image/.test(t.meta.contentType) ||
+            /^video/.test(t.meta.contentType)
+          : true
+      );
+      return result;
     },
     files: {
       get() {
@@ -137,9 +155,27 @@ export default {
     },
   },
   mounted() {
-    this.folderDive('/');
+    this.folderDive("/");
   },
   methods: {
+    async select() {
+      let files = await getAllSelectedFiles(this.storage, this.files, {
+        getDownloadUrl: true,
+        downloadCurrentFolder: false,
+      });
+      const quill = this.opt.quill;
+      const range = quill.getSelection();
+
+      console.log(range);
+      for (const file of files) {
+        if (/^image/.test(file.meta.contentType)) {
+          quill.editor.insertEmbed(range.index, "image", file.meta.downloadUrl);
+        } else if (/^video/.test(file.meta.contentType)) {
+          quill.editor.insertEmbed(range.index, "video", file.meta.downloadUrl);
+        }
+      }
+      this.close();
+    },
     async folderDive(paths) {
       await this.storage
         .ref(paths)
@@ -189,19 +225,21 @@ export default {
             "storage/setCurrentFolderData",
             JSON.parse(JSON.stringify(folders_mod.concat(files)))
           );
+          this.$store.commit("storage/setCurrentFolderPath", paths);
 
           return folders;
         });
     },
-    openContextMenu(evt) {
-      if (this.$refs.menu) this.$refs.menu.open(evt);
-    },
     focus() {},
-    open() {
+    open(opt) {
       this.popupActive = true;
+      this.opt = opt;
     },
     close() {
       this.popupActive = false;
+      setTimeout(() => {
+        this.$emit("close");
+      }, 500);
     },
     toggle() {
       this.popupActive = !this.popupActive;
@@ -210,3 +248,6 @@ export default {
   },
 };
 </script>
+<style lang="scss">
+@import "@/assets/scss/vuexy/apps/email.scss";
+</style>

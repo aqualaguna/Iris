@@ -65,7 +65,14 @@ Vue.prototype.$can = function(resource, action) {
     return false;
   }
 };
+import { Quill } from "vue2-editor";
 
+import { ImageDrop } from "quill-image-drop-module";
+import ImageResize from "quill-image-resize-module";
+import VideoResize from "quill-video-resize-module";
+Quill.register('modules/imageDrop', ImageDrop);
+Quill.register('modules/imageResize', ImageResize);
+Quill.register('modules/videoResize', VideoResize);
 // vue shortkey
 Vue.use(require("vue-shortkey"), { prevent: ["input", "textarea"] });
 
@@ -79,7 +86,7 @@ let ajv = new Ajv({
 require("ajv-errors")(ajv /*, {singleError: true} */);
 
 ajv.addKeyword("isNotEmpty", {
-  type: ["string", "null"],
+  type: ["string", "integer", "number", "null"],
   validate: function validate(schema, data) {
     validate.errors = [{keyword: 'isNotEmpty', message: 'this field is required.', params: {keyword: 'isNotEmpty'}}];
     return schema

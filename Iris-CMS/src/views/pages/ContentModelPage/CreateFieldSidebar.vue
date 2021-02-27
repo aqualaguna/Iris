@@ -81,11 +81,19 @@
           <vs-divider />
           <div class="flex flex-col">
             <template v-if="this.field_def.type == 'dropdown'">
-              <EnumFieldProperties @setEnum="field_def.schema.enum = $event" />
+              <EnumFieldProperties
+                @setEnum="field_def.schema.enum = $event"
+                @setDefault="field_def.schema.default = $event"
+                @setRequired="field_def.schema.isNotEmpty = $event"
+                :schema="field_def.schema"
+              />
             </template>
             <template v-else-if="this.field_def.type == 'ref'">
               <RefFieldProperties
                 @setRef="field_def.schema.collection_name = $event"
+                @setRequired="field_def.schema.required = $event"
+                @setFieldFromRef="field_def.schema.fieldFromRef = $event"
+                :schema="field_def.schema"
               />
             </template>
             <template v-else-if="this.field_def.type == 'image'">
@@ -134,11 +142,7 @@
                     <AjvInput
                       :schema="value"
                       v-model="field_def.schema[key]"
-                      :options="
-                        Array.isArray(field_def.schema.definitions)
-                          ? field_def.schema.definitions.map((t) => t.api_label)
-                          : []
-                      "
+                      :options="options"
                     />
                   </template>
                 </div>
@@ -211,6 +215,7 @@ export default {
         description: "",
         api_label: "",
         type: "",
+        hidden_field: false,
         schema: {},
       },
       errors: [],
@@ -271,13 +276,27 @@ export default {
 
       this.field_def.type = type;
       this.field_def.schema = {};
-      if (this.properties.type.constant)
+      if (this.properties.type && this.properties.type.constant)
         this.field_def.schema.type = this.properties.type.constant;
     },
     setApiLabel(val) {
       this.field_def.api_label = val.replace(/\s/g, "_").toLowerCase();
     },
     submitData() {
+      // check for forbidden field
+      const FORBIDDEN_FIELD = ["createdAt", "updatedAt", "archived"];
+      if (FORBIDDEN_FIELD.includes(this.field_def.api_label)) {
+        this.$vs.notify({
+          position: "bottom-center",
+          time: 2500,
+          title: "Api Label is Reserved !",
+          text: "please change your api label field.",
+          iconPack: "feather",
+          icon: "icon-alert-circle",
+          color: "warning",
+        });
+        return;
+      }
       this.field_def_schema.properties.schema = {
         properties: this.properties,
       };
@@ -316,8 +335,24 @@ export default {
     },
   },
   computed: {
-    fieldProperties() {
-      return [];
+    options() {
+      let definitions = this.field_def.schema.definitions;
+      if (Array.isArray(definitions)) {
+        if (definitions.length === 1) {
+          if (definitions[0].type === "object") {
+            // return every key
+            return definitions[0].schema.definitions.filter((t) => ['int', 'decimal', 'bool', 'dropdown', 'text', 'url'].includes(t.type)).map(t => t.api_label);
+          } else {
+            // other type
+            return [];
+          }
+        } else {
+          // multi type has no unique prop
+          return [];
+        }
+      } else {
+        return [];
+      }
     },
     scrollbarTag() {
       return this.$store.getters.scrollbarTag;

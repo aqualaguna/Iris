@@ -19,20 +19,28 @@
         />
         <vx-card
           class="flex-1 pb-5"
-          :title="definition.title + ' (' + ($options.filters.title(definition.type)) + ')'"
+          :title="
+            definition.title +
+              ' (' +
+              $options.filters.title(definition.type) +
+              ')'
+          "
           :subtitle="definition.description"
         >
           <template slot="actions">
-            <feather-icon
-              icon="EditIcon"
-              class="ml-4"
-              @click="$emit('edit', { definition, path })"
-            />
-            <feather-icon
-              icon="TrashIcon"
-              class="ml-4"
-              @click="$emit('delete', { index, path })"
-            />
+          <div class="flex">
+              <input type="checkbox" style="transform:scale(1)" class="mt-1 mx-2 text-sm" v-model="definition.hidden_field" >Hidden
+              <feather-icon
+                icon="EditIcon"
+                class="ml-4"
+                @click="$emit('edit', { definition, path })"
+              />
+              <feather-icon
+                icon="TrashIcon"
+                class="ml-4"
+                @click="$emit('delete', { index, path })"
+              />
+            </div>
           </template>
           <vs-button
             v-if="

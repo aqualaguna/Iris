@@ -1,8 +1,9 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { HttpsError } from "firebase-functions/lib/providers/https";
-import { decrypt } from "./helper/crypt";
-import algoliasearch from "algoliasearch";
+import algoliaOnCreate from "./trigger/algoliaOnCreate";
+import contentModelOnCreate from "./trigger/contentModelOnCreate";
+
 
 // The Firebase Admin SDK to access Cloud Firestore.
 // import * as admin from "firebase-admin";
@@ -17,14 +18,15 @@ const reserved_collection = [
 
 export default functions.firestore
   .document("/{table_name}/{docId}")
-  .onWrite(async (snapshot, context) => {
+  .onCreate(async (snapshot, context) => {
     // ignore if not prefixed
     if (!context.params.table_name.startsWith("iris_")) {
       return;
     }
     // ignore if its system
     if (reserved_collection.includes(context.params.table_name)) {
-      // do nothing
+      // trigger for content model create
+      if(context.params.table_name === 'iris_content_model') await contentModelOnCreate(snapshot, context);
       return;
     }
     // check if algolia index is set
@@ -55,35 +57,7 @@ export default functions.firestore
     if (!settingsData.exists) {
       throw new HttpsError("internal", "settings not exists. init first!");
     }
-    const algolia = settingsData.data()?.algolia;
-    if (
-      typeof algolia === "object" &&
-      algolia.app_id &&
-      cmData.data()?.algolia_index !== ""
-    ) {
-      //algolia is set then decrypt the secret.
-
-      algolia.app_id = decrypt(algolia.app_id, secretData.data()?.secret);
-      algolia.app_secret = decrypt(
-        algolia.app_secret,
-        secretData.data()?.secret
-      );
-      // init algolia
-      const client = algoliasearch(algolia.app_id, algolia.app_secret);
-      const index = client.initIndex(cmData.data()?.algolia_index);
-      // check if deleted
-      if (!snapshot.after.exists) {
-        // delete obj from algolia
-        await index.deleteObject(snapshot.before.id);
-      } else {
-        // update create operation
-        await index.saveObject({
-          objectID: snapshot.after.id,
-          ...snapshot.after.data(),
-        });
-      }
-    } else {
-      // do nothing
-      return;
-    }
+    // algolia trigger
+    await algoliaOnCreate(settingsData, cmData, secretData, snapshot);
+    // CREATE content model trigger
   });

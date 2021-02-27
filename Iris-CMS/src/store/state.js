@@ -73,6 +73,7 @@ const state = {
     firebaseAppList: [],
     selectedApp: null,
     IrisUser: null,
+    IrisSettings: null,
     role: null,
     listener: {},    
 }

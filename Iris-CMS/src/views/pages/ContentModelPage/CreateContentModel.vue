@@ -13,6 +13,16 @@
         placeholder="Content Model Name. eg. Post, Blog, Comment, etc."
       />
     </div>
+    <div class="flex justify-end">
+      <vs-switch
+        v-model="algolia_index"
+        class="float-right"
+        title="please set your algolia before using this field."
+      >
+        <span slot="on" style="font-size:1.1rem;">Algolia On</span>
+        <span slot="off" style="font-size:1.1rem;">Algolia Off</span>
+      </vs-switch>
+    </div>
 
     <h3>Definition Field</h3>
     <vs-button
@@ -86,6 +96,7 @@ export default {
       id: null,
       mode: "create",
       field_mode: "create",
+      algolia_index: false,
       definitions: [],
       title: "",
       icon: "KeyIcon",
@@ -178,6 +189,31 @@ export default {
     createContentModelCollectionName(val) {
       return "iris_" + val.replace(/\s/g, "_").toLowerCase();
     },
+    /**
+     * modifiyng definition of an array to object if only 1.
+     */
+    definitionDive(definitions) {
+      for (const definition of definitions) {
+        if (definition.type === "array") {
+          let tempDefinition = definition.schema.definitions;
+          if (Array.isArray(tempDefinition)) {
+            if (tempDefinition.length == 1) {
+              // make it dive into deeper tree first
+              this.definitionDive(tempDefinition);
+              // make it an object instead of array
+              definition.schema.definitions = tempDefinition[0];
+            } else if (definition.definitions.length > 1) {
+              // make it dive if there is children
+              this.definitionDive(tempDefinition);
+            } else {
+              throw "array type must have at least 1 definitions.";
+            }
+          } else if(tempDefinition === null || tempDefinition === undefined){
+            throw "array type must have at least 1 definitions.";
+          }
+        }
+      }
+    },
     async createContentModel() {
       if (this.app) {
         let colName = this.createContentModelCollectionName(this.title);
@@ -202,8 +238,23 @@ export default {
           icon: this.icon,
           row_count: 0,
           archived: false,
-          algolia_index: "",
+          algolia_index: this.algolia_index ? colName : "",
         };
+        try {
+          this.definitionDive(payload.definitions);
+        } catch (e) {
+          this.$vs.notify({
+            position: "bottom-center",
+            time: 2500,
+            title: "Error",
+            text: e,
+            iconPack: "feather",
+            icon: "icon-alert-circle",
+            color: "danger",
+          });
+          return;
+        }
+
         if (this.mode == "update") {
           // this field in unchangeable.
           payload.collection_name = this.id;

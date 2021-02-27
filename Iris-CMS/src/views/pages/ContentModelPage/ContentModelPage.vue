@@ -155,13 +155,12 @@
                     @click.stop="confirmDelete(tr)"
                   />
                 </vx-tooltip>
-                <vx-tooltip :text="!tr.archive ? 'Archive' : 'Un-Archive'">
+                <vx-tooltip :text="!tr.archived ? 'Archive' : 'Un-Archive'">
                   <feather-icon
-                    v-if="!tr.archive"
                     icon="ArchiveIcon"
                     class="ml-2"
                     svgClasses="w-5 h-5 hover:text-primary stroke-current"
-                    :style="{ color: !tr.archive ? '' : '#C8A5C8' }"
+                    :style="{ color: !tr.archived ? '' : '#C8A5C8' }"
                     @click.stop="archiveData(tr)"
                   />
                 </vx-tooltip>

@@ -184,6 +184,18 @@ export default {
         },
         additionalItems: false,
       },
+      default: {
+        type: ["string", "null"],
+        default: null,
+        title: "Default Value",
+        description: "Set an optional default value for the field.",
+      },
+      isNotEmpty: {
+        type: ["boolean", "null"],
+        default: false,
+        title: "Required",
+        description: "Set this field to not accept empty value.",
+      },
     },
     additionalProperties: false,
   },
@@ -192,16 +204,24 @@ export default {
       collection_name: {
         type: "string",
       },
+      required: {
+        type: "boolean",
+        default: false
+      },
+      fieldFromRef: {
+        type: 'array',
+        default: [],
+      }
     },
     additionalProperties: false,
-    required: ["collection_name"],
+    required: ["collection_name", "required"],
   },
   array: {
     type: "object",
     properties: {
-
       definitions: {
         type: ["array", "object", "null"],
+        minItems: 1,
         hidden: true,
         default: null,
       },
@@ -221,11 +241,19 @@ export default {
       uniqueItemProperties: {
         type: ["array", "null"],
         uniqueItems: true,
+        items: {type: "string"},
         default: [],
         title: "Unique Field(optional)",
         description:
           "Set an optional unique field (PK) for the field. use api key field",
       },
+      uniqueItems: {
+        type: ["boolean", "null"],
+        default: null,
+        title: "Unique Item Global (optional)",
+        description:
+          "Set this to true so item in array is unique. this is different from \"Unique Field(optional)\" which depend on field properties its affecting all type.",
+      }
     },
   },
   object: {
@@ -281,6 +309,12 @@ export default {
         title: "Default Value",
         description: "Set an optional default value for the field.",
       },
+      isNotEmpty: {
+        type: ["boolean", "null"],
+        default: false,
+        title: "Required",
+        description: "Set this field to not accept empty value.",
+      },
     },
   },
   decimal: {
@@ -304,6 +338,12 @@ export default {
         default: 1,
         title: "Default Value",
         description: "Set an optional default value for the field.",
+      },
+      isNotEmpty: {
+        type: ["boolean", "null"],
+        default: false,
+        title: "Required",
+        description: "Set this field to not accept empty value.",
       },
     },
   },
@@ -335,7 +375,7 @@ export default {
       },
       default: {
         type: ["boolean", "null"],
-        default: true,
+        default: false,
         title: "Default Value",
         description: "Set an optional default value for the field.",
       },

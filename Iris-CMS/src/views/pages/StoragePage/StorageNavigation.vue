@@ -43,7 +43,10 @@
           @click="$emit('add-file')"
         />
       </vx-tooltip>
-      <vx-tooltip text="Delete Files Or Folders" v-if="$can('storage', 'delete')">
+      <vx-tooltip
+        text="Delete Files Or Folders"
+        v-if="$can('storage', 'delete')"
+      >
         <feather-icon
           icon="TrashIcon"
           v-shortkey="['del']"
@@ -72,7 +75,10 @@ import EventBus from "@/event-bus";
 
 export default {
   name: "StorageNavigation",
-  props: ["selectAllCheckBox"],
+  props: {
+    selectAllCheckBox: Boolean,
+    local: Boolean,
+  },
   components: {
     VxBreadCrumb,
   },
@@ -125,9 +131,14 @@ export default {
       this.goto(temp.join("/") || "/");
     },
     goto(url) {
-      EventBus.$emit("folder-dive", {
-        fullPath: url,
-      });
+      if (this.local) {
+        this.$emit("folder-dive", {
+          fullPath: url,
+        });
+      } else
+        EventBus.$emit("folder-dive", {
+          fullPath: url,
+        });
     },
   },
 };

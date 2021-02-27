@@ -1,12 +1,22 @@
 <template>
   <div id="data-list-list-view" class="data-list-container">
-    <vs-table
+    <vx-table
       ref="table"
       multiple
       v-model="selected"
+      @search="handleSearch"
+      @change-page="
+        mode == 'firestore'
+          ? handleChangePage($event, currentPage)
+          : handlePageAlgolia($event)
+      "
+      @sort="mode == 'firestore' ? handleSort : handleSortAlgolia"
+      :sst="true"
       pagination
       :max-items="itemsPerPage"
-      search
+      :current-page="currentPage"
+      :total="queriedItems"
+      :search="irisContentModel ? irisContentModel.algolia_index != '' : false"
       :data="products"
     >
       <div
@@ -29,7 +39,7 @@
             </div>
 
             <vs-dropdown-menu>
-              <vs-dropdown-item @click="deleteGroup" v-if="$can('content_model', 'delete')">
+              <vs-dropdown-item @click="deleteGroup">
                 <span class="flex items-center">
                   <feather-icon
                     icon="TrashIcon"
@@ -71,29 +81,21 @@
           <div
             class="p-4 border border-solid d-theme-border-grey-light rounded-full d-theme-dark-bg cursor-pointer flex items-center justify-between font-medium"
           >
-            <span class="mr-2"
-              >{{ currentPage * itemsPerPage - (itemsPerPage - 1) }} -
-              {{
-                products.length - currentPage * itemsPerPage > 0
-                  ? currentPage * itemsPerPage
-                  : products.length
-              }}
-              of {{ queriedItems }}</span
-            >
+            <span class="mr-2">{{ range }} of {{ queriedItems }}</span>
             <feather-icon icon="ChevronDownIcon" svgClasses="h-4 w-4" />
           </div>
           <!-- <vs-button class="btn-drop" type="line" color="primary" icon-pack="feather" icon="icon-chevron-down"></vs-button> -->
           <vs-dropdown-menu>
-            <vs-dropdown-item @click="itemsPerPage = 4">
+            <vs-dropdown-item @click="setPerPage(4)">
               <span>4</span>
             </vs-dropdown-item>
-            <vs-dropdown-item @click="itemsPerPage = 10">
+            <vs-dropdown-item @click="setPerPage(10)">
               <span>10</span>
             </vs-dropdown-item>
-            <vs-dropdown-item @click="itemsPerPage = 15">
+            <vs-dropdown-item @click="setPerPage(15)">
               <span>15</span>
             </vs-dropdown-item>
-            <vs-dropdown-item @click="itemsPerPage = 20">
+            <vs-dropdown-item @click="setPerPage(20)">
               <span>20</span>
             </vs-dropdown-item>
           </vs-dropdown-menu>
@@ -101,12 +103,11 @@
       </div>
 
       <template slot="thead">
-        <vs-th>Icon</vs-th>
-        <vs-th sort-key="title">Name</vs-th>
-        <vs-th sort-key="collection_name">Collection Name</vs-th>
-        <vs-th># Properties</vs-th>
-        <vs-th sort-key="row_count"># Record</vs-th>
-        <vs-th>Action</vs-th>
+        <vs-th
+          v-for="definition in definitions.filter((t) => !t.hidden_field)"
+          :key="definition.api_label"
+          >{{ definition.title }}</vs-th
+        ><vs-th>Action</vs-th>
       </template>
 
       <template slot-scope="{ data }">
@@ -117,27 +118,20 @@
             :key="indextr"
             v-for="(tr, indextr) in data"
           >
-            <vs-td>
-              <feather-icon :icon="tr.icon || 'KeyIcon'" />
-            </vs-td>
-            <vs-td>
+            <vs-td
+              v-for="definition in definitions.filter((t) => !t.hidden_field)"
+              :key="definition.api_label"
+            >
               <p class="product-name font-medium truncate">
-                {{ tr.title | title }}
+                <template v-if="!isDocumentReference(tr[definition.api_label])">
+                  {{ tr[definition.api_label] }}
+                </template>
+                <template v-else>
+                  link
+                </template>
+                
               </p>
             </vs-td>
-
-            <vs-td>
-              <p class="product-category">{{ tr.collection_name }}</p>
-            </vs-td>
-
-            <vs-td>
-              <p class="product-category">{{ tr.definitions.length }}</p>
-            </vs-td>
-
-            <vs-td>
-              <p class="product-category">{{ tr.row_count }}</p>
-            </vs-td>
-
             <vs-td class="whitespace-no-wrap">
               <div class="flex">
                 <vx-tooltip text="Edit">
@@ -147,7 +141,7 @@
                     @click.stop="editData(tr)"
                   />
                 </vx-tooltip>
-                <vx-tooltip text="Delete" v-if="$can('content_model', 'delete')">
+                <vx-tooltip text="Delete">
                   <feather-icon
                     icon="TrashIcon"
                     svgClasses="w-5 h-5 hover:text-danger stroke-current"
@@ -155,13 +149,12 @@
                     @click.stop="confirmDelete(tr)"
                   />
                 </vx-tooltip>
-                <vx-tooltip :text="!tr.archive ? 'Archive' : 'Un-Archive'">
+                <vx-tooltip :text="!tr.archived ? 'Archive' : 'Un-Archive'">
                   <feather-icon
-                    v-if="!tr.archive"
                     icon="ArchiveIcon"
                     class="ml-2"
                     svgClasses="w-5 h-5 hover:text-primary stroke-current"
-                    :style="{ color: !tr.archive ? '' : '#C8A5C8' }"
+                    :style="{ color: !tr.archived ? '' : '#C8A5C8' }"
                     @click.stop="archiveData(tr)"
                   />
                 </vx-tooltip>
@@ -170,50 +163,220 @@
           </vs-tr>
         </tbody>
       </template>
-    </vs-table>
+    </vx-table>
   </div>
 </template>
 
 <script>
 import handleFirestoreReject from "@/helper/handleFirestoreReject";
+import VxTable from "@/components/VxTable.vue";
+var debounce = require("lodash.debounce");
+const algoliasearch = require("algoliasearch");
 
 export default {
-  name: 'CustomContentModelPage',
+  name: "CustomContentModelPage",
+  components: {
+    VxTable,
+  },
   data() {
     return {
       selected: [],
       itemsPerPage: 4,
+      currentPage: 1,
       isMounted: false,
+      mode: "firestore", // algolia or firestore lol this is awesome.
+      cache: {},
+      prods: [],
+      listener: null,
+      algolia_index: null,
+      algolia_meta: {
+        nbHits: 0,
+        query: "",
+      },
     };
   },
   computed: {
-
+    IrisSettings() {
+      return this.$store.state.IrisSettings;
+    },
     modelName() {
       return this.$route.params.id;
     },
     irisContentModel() {
-      return this.$store.state.content_model.irisContentModel.find(t => t.id ==  this.modelName);
+      return this.$store.state.content_model.irisContentModel.find(
+        (t) => t.id == this.modelName
+      );
+    },
+    definitions() {
+      return this.irisContentModel ? this.irisContentModel.definitions : [];
     },
     app() {
       let config = this.$store.state.selectedApp;
-      return this.$app(config.projectId) || null;
+      return (config ? this.$app(config.projectId) : null) || null;
     },
     products() {
-      return this.$store.state.content_model.irisContentModel;
-    },
-    currentPage() {
-      if (this.isMounted) {
-        return this.$refs.table.currentx;
-      }
-      return 0;
+      return this.prods;
     },
     queriedItems() {
-      return this.$refs.table
-        ? this.$refs.table.queriedResults.length
-        : this.products.length;
+      let fscount = this.irisContentModel ? this.irisContentModel.row_count : 0;
+      return this.mode == "firestore" ? fscount : this.algolia_meta.nbHits;
+    },
+    range() {
+      let start =
+        this.currentPage * this.itemsPerPage - (this.itemsPerPage - 1);
+      let end = start + this.prods.length - 1;
+      return `${start} - ${end}`;
     },
   },
   methods: {
+    isDocumentReference(val) {
+      return val instanceof this.$firebase.firestore.DocumentReference;
+    },
+    setPerPage(val) {
+      if (val != this.itemsPerPage) {
+        // invalidate cache.
+        this.cache = {};
+      }
+      this.itemsPerPage = val;
+      if (this.currentPage != 1) this.currentPage = 1;
+      else {
+        this.currentPage = 1;
+        if (this.mode == "firestore") this.handleChangePage(1, 1);
+        else this.handlePageAlgolia(1);
+      }
+    },
+    handlePageAlgolia(page) {
+      this.algolia_index
+        .search(this.algolia_meta.query, {
+          page: page - 1,
+          hitsPerPage: this.itemsPerPage,
+        })
+        .then((result) => {
+          const { nbHits, hits } = result;
+          this.algolia_meta.nbHits = nbHits;
+          this.prods = hits;
+        });
+    },
+    async handleChangePage(page, currentPage, nochangepage = false) {
+      console.log("handle firestore", page);
+      let db = this.app.firestore();
+      let col = db.collection(this.modelName);
+      // wow such asshole firebase not allowing to offset
+      let flagReverse = false;
+      let query = col.limit(this.itemsPerPage).orderBy("createdAt", "desc");
+      if (
+        Math.abs(currentPage - page) == 1 ||
+        Math.abs(currentPage - page) == 0
+      ) {
+        // left right op
+        let c = this.cache[page];
+        if (c) {
+          // use cache
+          query = query.startAt(c.startDoc).endAt(c.lastDoc);
+        } else if (currentPage < page) {
+          // next
+          // check prev cache
+          query = query.startAfter(this.cache[page - 1].lastDoc);
+        } else {
+          if (this.cache[page - 1]) {
+            query = query.startAfter(this.cache[page - 1].lastDoc);
+          } else if (this.cache[page + 1]) {
+            query = col.limit(this.itemsPerPage).orderBy("createdAt");
+            query = query.startAfter(this.cache[page + 1].startDoc);
+            flagReverse = true;
+          } else {
+            let limit = this.itemsPerPage;
+            let lastPage = Math.ceil(this.queriedItems / this.itemsPerPage);
+            if (1 == lastPage && lastPage == page) {
+              limit = this.itemsPerPage;
+              query = col.limit(limit).orderBy("createdAt", "desc");
+            } else if (lastPage == page) {
+              limit = this.queriedItems % this.itemsPerPage;
+              query = col.limit(limit).orderBy("createdAt");
+              flagReverse = true;
+            }
+          }
+        }
+      } else {
+        // jump op
+        if (this.cache[page]) {
+          query = query
+            .startAt(this.cache[page].startDoc)
+            .endAt(this.cache[page].lastDoc);
+        } else {
+          // next x times
+          // get least starting point
+          // to left
+          let leftindex = page - 1,
+            leftcount = 1,
+            rightcount = 1,
+            rightindex = page + 1;
+
+          while (leftindex > 0) {
+            if (this.cache[leftindex]) {
+              break;
+            }
+            leftcount++;
+            leftindex--;
+          }
+          while (
+            rightindex <= Math.ceil(this.queriedItems / this.itemsPerPage)
+          ) {
+            if (this.cache[rightindex]) {
+              break;
+            }
+            rightcount++;
+            rightindex++;
+          }
+          if (leftcount < rightcount) {
+            // left is least
+            if (this.cache[leftindex]) {
+              // not start
+              for (let index = 1; index <= leftcount; index++) {
+                await this.handleChangePage(
+                  leftindex + index,
+                  leftindex + index - 1,
+                  index != leftcount
+                );
+              }
+            } else {
+              // starting point lol practically impossible
+            }
+          } else {
+            // right is least
+            for (let index = 1; index <= rightcount; index++) {
+              await this.handleChangePage(
+                rightindex - index,
+                rightindex - index + 1,
+                index != rightcount
+              );
+            }
+          }
+          return;
+        }
+      }
+      await query
+        .get()
+        .then((snapshot) => {
+          this.prods = snapshot.docs.map((doc) => ({
+            ...doc.data(),
+            id: doc.id,
+          }));
+          if (flagReverse) this.prods.reverse();
+          this.cache[page] = {
+            lastDoc: snapshot.docs[snapshot.docs.length - 1],
+            startDoc: snapshot.docs[0],
+          };
+          if (!nochangepage) this.currentPage = page;
+        })
+        .catch(handleFirestoreReject.bind(this));
+    },
+    handleSortAlgolia(key, active) {
+      console.log(`the user ordered: ${key} ${active}`);
+    },
+    handleSort(key, active) {
+      console.log(`the user ordered: ${key} ${active}`);
+    },
     deleteGroup() {
       this.$vs.dialog({
         type: "confirm",
@@ -259,7 +422,10 @@ export default {
         return;
       }
       let res = await this.$store
-        .dispatch("content_model/archiveContentModel", tr.id)
+        .dispatch("content_model/archiveContentModelRow", {
+          model: this.modelName,
+          id: tr.id,
+        })
         .catch(handleFirestoreReject.bind(this));
       if (typeof res == "object" && res.color && notify) this.$vs.notify(res);
     },
@@ -271,7 +437,7 @@ export default {
         type: "confirm",
         color: "danger",
         title: `Confirm`,
-        text: `You are about to DELETE '${tr.title}' Collection. this is irreversible (cannot be undone).`,
+        text: `You are about to DELETE 1 Row. this is irreversible (cannot be undone).`,
         accept: this.deleteData.bind(this, tr),
       });
     },
@@ -286,17 +452,105 @@ export default {
         return;
       }
       let res = await this.$store
-        .dispatch("content_model/deleteContentModel", tr)
+        .dispatch("content_model/deleteContentModelRow", {
+          model: this.modelName,
+          id: tr.id,
+        })
         .catch(handleFirestoreReject.bind(this));
       if (typeof res == "object" && res.color && notify) this.$vs.notify(res);
     },
     editData(tr) {
-      this.$store.commit("content_model/setUpdateData", tr);
-      this.$router.push("/dashboard/content-model-update");
+      this.$store.commit("content_model/setUpdateDataRow", tr);
+      this.$router.push(this.$route.path + "/update");
     },
+    async firstData() {
+      let db = this.app.firestore();
+      let col = db.collection(this.modelName);
+      await col
+        .orderBy("createdAt", "desc")
+        .limit(this.itemsPerPage)
+        .get()
+        .then((snapshot) => {
+          this.prods = snapshot.docs.map((doc) => ({
+            ...doc.data(),
+            id: doc.id,
+          }));
+          this.cache[1] = {
+            lastDoc: snapshot.docs[snapshot.docs.length - 1],
+            startDoc: snapshot.docs[0],
+          };
+        })
+        .catch(handleFirestoreReject.bind(this));
+    },
+    mountFunction() {
+      // get first
+      if (this.app) {
+        let db = this.app.firestore();
+        let col = db.collection(this.modelName);
+        // listen to change and reset cache if so.
+        this.listener = col
+          .orderBy("createdAt")
+          .limitToLast(1)
+          .onSnapshot(() => {
+            this.cache = {};
+            // refresh
+            this.firstData().then(() => {
+              this.handleChangePage(this.currentPage, this.currentPage);
+            });
+          });
+        // check for algolia
+        if (this.irisContentModel.algolia_index != "" && this.IrisSettings) {
+          const { app_id, app_search_secret } = this.IrisSettings.algolia;
+          const client = algoliasearch(app_id, app_search_secret);
+          this.algolia_index = client.initIndex(this.modelName);
+        }
+      }
+    },
+  },
+  watch: {
+    "$route.params.id": function() {
+      // destroy listener if exists
+      if (typeof this.listener == "function") this.listener();
+      // remount
+      this.mountFunction();
+    },
+  },
+  destroyed() {
+    if (typeof this.listener == "function") this.listener();
+  },
+  beforeCreate() {
+    this.handleSearch = debounce(
+      function(searching) {
+        if (searching == "") {
+          this.mode = "firestore";
+          this.currentPage = 1;
+          this.firstData();
+          return;
+        }
+        this.algolia_meta.query = searching;
+        this.mode = "algolia";
+
+        if (this.algolia_index && this.currentPage == 1) {
+          this.algolia_index
+            .search(searching, {
+              page: this.currentPage - 1,
+              hitsPerPage: this.itemsPerPage,
+            })
+            .then((result) => {
+              const { hits, nbHits } = result;
+              this.algolia_meta.nbHits = nbHits;
+              this.prods = hits;
+            });
+        } else {
+          this.currentPage = 1;
+        }
+      }.bind(this),
+      500
+    );
   },
   mounted() {
     this.isMounted = true;
+    this.mountFunction();
   },
 };
 </script>
@@ -419,4 +673,3 @@ export default {
   }
 }
 </style>
-

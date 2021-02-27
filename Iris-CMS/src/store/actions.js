@@ -39,6 +39,24 @@ const actions = {
     commit("setListener", { key: "userListener", value: cancelFunc });
     return true;
   },
+  listenSettings({ commit }, app) {
+    if (!app) return false;
+    let db = firebase.firestore(app);
+    let currentUser = app.auth().currentUser;
+    if (!currentUser) return false;
+    let doc = db.collection("iris_global").doc('iris_settings');
+    let cancelFunc = doc.onSnapshot((snapshot) => {
+      if (snapshot.exists) {
+        let data = {
+          id: snapshot.id,
+          ...snapshot.data()
+        };
+        commit("setIrisSettings", data);
+      }
+    });
+    commit("setListener", { key: "settingListener", value: cancelFunc });
+    return true;
+  },
 
   // /////////////////////////////////////////////
   // COMPONENTS

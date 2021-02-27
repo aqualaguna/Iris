@@ -43,7 +43,8 @@ service cloud.firestore {
     }
     function can(res, action) {
     	let role = getRole(request.auth.uid);
-      return role == null ? false : role.permission[res][action];
+      // make super_admin exception.
+      return role == null ? false : (role.permission[res][action] ? true : role.role == 'super_admin');
     }
     // match /{document=**} {
     //   allow read, write: if false;
@@ -52,7 +53,7 @@ service cloud.firestore {
     	// simplified to reduce get request
     	function canReadPermission() {
       		let role = getRole(request.auth.uid);
-          return role == null ? false : role.permission['role']['read'] || role.role == docId;
+          return role == null ? false : (role.permission['role']['read'] || role.role == docId);
       }
     	// only authenticated and have permission user can read.
     	allow read: if validUser() && canReadPermission();
@@ -95,8 +96,9 @@ service cloud.firestore {
       allow write: if validUser() && getUserData(request.auth.uid).role_id == 'super_admin';
     }
     match /{tableName}/{docId} {
-    	allow read: if validUser() && tableName.matches('^iris_(.*)');
-      allow write: if validUser()&& tableName.matches('^iris_(.*)');
+    	// rule for collection begin with iris_ for other return false no matter what.
+    	allow read: if validUser() && tableName.matches('^iris_(.*)') && can(tableName[5:], 'read');
+      allow create: if validUser() && tableName.matches('^iris_(.*)') && can(tableName[5:], 'update');
     }
     // #plugin-rule-start
     
