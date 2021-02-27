@@ -64,7 +64,6 @@
       <div class="content-wrapper">
         <div class="router-view">
           <div class="router-content">
-            {{$route.meta}}
             <transition :name="routerTransition">
               <div
                 v-if="$route.meta.breadcrumb || $route.meta.pageTitle"
